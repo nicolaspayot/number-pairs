@@ -12,7 +12,7 @@ interface Props {
 export default memo(function CardItem({ card, index, onClick }: Props) {
     return (
         <motion.div
-            className="shadow-lg aspect-square sm:text-7xl text-5xl font-bold"
+            className="shadow-lg aspect-square sm:text-7xl text-4xl font-bold"
             whileHover={{
                 scale: card.flipped || card.matched ? 1 : 1.08,
                 transition: { duration: 0.2 },
