@@ -4,18 +4,22 @@ import { useGameTimer } from './hooks/useGameTimer';
 import CardItem from './components/CardItem';
 import { generateTarget, generateGrid } from './utils';
 
+const MAX_TIME_BONUS = 50;
+
 function App() {
     const [target, setTarget] = useState(generateTarget());
     const [cards, setCards] = useState(generateGrid(target));
-    const [totalMoves, setTotalMoves] = useState(0);
+    const [matchStartTime, setMatchStartTime] = useState<number | null>(null);
+    const [score, setScore] = useState(0);
     const { formattedElapsedTime, startTimer, stopTimer } = useGameTimer();
     const [gameStatus, setGameStatus] = useState<'IDLE' | 'IN_PROGRESS' | 'WON'>('IDLE');
 
     function startNewGame() {
         setGameStatus('IDLE');
 
-        setTotalMoves(0);
+        setScore(0);
         stopTimer(true);
+        setMatchStartTime(null);
 
         const newTarget = generateTarget();
         setTarget(newTarget);
@@ -40,13 +44,21 @@ function App() {
             if (gameStatus === 'IDLE') {
                 setGameStatus('IN_PROGRESS');
                 startTimer();
+                setMatchStartTime(Date.now());
             }
 
             candidates.push(newCards[cardIndex]);
             if (candidates.length === 2) {
-                setTotalMoves((totalMoves) => totalMoves + 1);
-
                 if (candidates[0].num + candidates[1].num === target) {
+                    const matchDuration = matchStartTime ? (Date.now() - matchStartTime) / 1000 : 0;
+                    // Lose 2 points per second
+                    const timeBonus = Math.max(MAX_TIME_BONUS - Math.floor(matchDuration * 2), 0);
+                    // Base score is 100 points for each correct pair
+                    setScore((score) => score + 100 + timeBonus);
+
+                    // Reset timer only after a successful match
+                    setMatchStartTime(null);
+
                     setCards(
                         newCards.map((card) => {
                             if (card.flipped && !card.matched) {
@@ -56,6 +68,9 @@ function App() {
                         }),
                     );
                 } else {
+                    // Wrong pair penalty (-20 points)
+                    setScore((score) => Math.max(0, score - 20));
+
                     setTimeout(() => {
                         setCards(
                             newCards.map((card) => {
@@ -66,13 +81,18 @@ function App() {
                 }
             }
         },
-        [cards, gameStatus, startTimer, target, setCards, setTotalMoves],
+        [cards, gameStatus, startTimer, target, setCards, setScore],
     );
 
     useEffect(() => {
         if (cards.every((card) => card.matched)) {
-            console.log('You won!');
+            setGameStatus('WON');
             stopTimer();
+
+            const timeoutId = setTimeout(() => {
+                alert('👏 You won!');
+            }, 500);
+            return () => clearTimeout(timeoutId);
         }
     }, [cards, stopTimer]);
 
@@ -92,7 +112,7 @@ function App() {
                 <div className="flex justify-between items-center mb-4 p-6 rounded-lg bg-white/10 text-white">
                     <div className="sm:text-2xl flex items-center gap-2">
                         <Trophy />
-                        Moves: <span className="text-white font-bold min-w-[40px] inline-block">{totalMoves}</span>
+                        Score: <span className="text-white font-bold min-w-[40px] inline-block">{score}</span>
                     </div>
                     <div className="sm:text-2xl flex items-center gap-2">
                         <Clock />
