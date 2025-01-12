@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Brain, RefreshCw, Trophy, Clock } from 'lucide-react';
+import { Brain, RefreshCw, Trophy, Clock, Award } from 'lucide-react';
+import { useHighScore } from './hooks/useHighScore';
 import { useGameTimer } from './hooks/useGameTimer';
 import CardItem from './components/CardItem';
 import { generateTarget, generateGrid } from './utils';
@@ -11,6 +12,7 @@ function App() {
     const [cards, setCards] = useState(generateGrid(target));
     const [matchStartTime, setMatchStartTime] = useState<number | null>(null);
     const [score, setScore] = useState(0);
+    const { highScore, updateHighScore } = useHighScore();
     const { formattedElapsedTime, startTimer, stopTimer } = useGameTimer();
     const [gameStatus, setGameStatus] = useState<'IDLE' | 'IN_PROGRESS' | 'WON'>('IDLE');
 
@@ -88,13 +90,14 @@ function App() {
         if (cards.every((card) => card.matched)) {
             setGameStatus('WON');
             stopTimer();
+            updateHighScore(score);
 
             const timeoutId = setTimeout(() => {
                 alert('👏 You won!');
             }, 500);
             return () => clearTimeout(timeoutId);
         }
-    }, [cards, stopTimer]);
+    }, [cards, stopTimer, score]);
 
     return (
         <div className="h-[100dvh] max-w-screen-sm mx-auto p-8 flex flex-col">
@@ -109,14 +112,23 @@ function App() {
                 </p>
             </div>
             <div className="w-full sm:bg-white/10 sm:backdrop-blur-md sm:rounded-2xl sm:p-8 sm:shadow-xl">
-                <div className="flex justify-between items-center mb-4 p-6 rounded-lg bg-white/10 text-white">
-                    <div className="sm:text-2xl flex items-center gap-2">
-                        <Trophy />
-                        Score: <span className="text-white font-bold min-w-[40px] inline-block">{score}</span>
+                <div className="flex justify-between items-center gap-2 mb-4 p-6 rounded-lg bg-white/10 text-white">
+                    <div className="flex gap-2">
+                        <div className="sm:text-2xl flex items-center gap-2">
+                            <Trophy className="w-5 h-5 sm:w-6 sm:h-6" aria-label="Highest Score" />
+                            <span className="text-white font-bold min-w-[50px] sm:min-w-[80px] inline-block">
+                                {highScore}
+                            </span>
+                        </div>
+                        <div className="sm:text-2xl flex items-center gap-2">
+                            <Award className="w-5 h-5 sm:w-6 sm:h-6" aria-label="Score" />
+                            <span className="text-white font-bold min-w-[50px] sm:min-w-[80px] inline-block">
+                                {score}
+                            </span>
+                        </div>
                     </div>
                     <div className="sm:text-2xl flex items-center gap-2">
-                        <Clock />
-                        Time:{' '}
+                        <Clock className="w-5 h-5 sm:w-6 sm:h-6" aria-label="Time" />
                         <span className="text-white font-bold min-w-[60px] sm:min-w-[86px] inline-block">
                             {formattedElapsedTime}
                         </span>
